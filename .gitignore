@@ -1,11 +1,4 @@
-CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
+Envy24Driver.xcodeproj/project.xcworkspace
+Envy24Driver.xcodeproj/xcuserdata
+Envy24_64bit_Driver.xcodeproj/project.xcworkspace
+Envy24_64bit_Driver.xcodeproj/xcuserdata
