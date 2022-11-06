@@ -137,6 +137,16 @@
 #define ICE1712_DELTA_1010LT_CS_NONE	0x50	/* nothing */
 #define ICE1712_DELTA_1010LT_WORDCLOCK 0x80	/* sample clock source: 0 = Word Clock Input, 1 = S/PDIF Input ??? */
 
+/* TerraTec DMX 6Fire configuration definitions */
+#define ICE1712_6FIRE_AK4524_CS_MASK    0x07    /* AK4524 chip select #1-#3 */
+#define ICE1712_6FIRE_RW        0x08    /* read/write switch for i2c; high = write  */
+#define ICE1712_6FIRE_SERIAL_DATA    0x10    /* i2c & ak4524 data */
+#define ICE1712_6FIRE_SERIAL_CLOCK    0x20    /* i2c & ak4524 clock */
+#define ICE1712_6FIRE_TX2        0x40    /* MIDI2 */
+#define ICE1712_6FIRE_RX2        0x80    /* MIDI2 */
+
+#define ICE1712_6FIRE_PCF9554_ADDR    (0x40>>1)
+#define ICE1712_6FIRE_CS8427_ADDR    (0x22)  
 
 #define IEC958_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
 #define IEC958_AES0_NONAUDIO		(1<<1)	/* 0 = audio, 1 = non-audio */

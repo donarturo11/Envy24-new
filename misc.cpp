@@ -21,7 +21,7 @@
 #define EWS88MT_2 0x3b152511
 #define TS88PCI 0x3b157c11
 #define EWX2496_ID 0x3b153011
-
+#define DMX6FIRE_2496_ID 0x3b153811
 
 /* Public functions in main.c */
 void card_cleanup(struct CardData *card);
@@ -29,6 +29,7 @@ static void CreateParmsFor2496(struct CardData *card);
 static void CreateParmsForDelta4466(struct CardData *card);
 static void CreateParmsForDelta1010LT(struct CardData *card);
 static void CreateParmsForEWX2496(struct CardData *card);
+static void CreateParmsForDMX6Fire2496(struct CardData *card);
 static void CreateParmsForDelta410(struct CardData *card);
 void InitDigitalOut(struct CardData *card);
 
@@ -1103,6 +1104,17 @@ int card_init(struct CardData *card)
                 break;
             }
                 
+            case DMX6FIRE_2496_ID:
+            {
+                //dev->ioWrite16(CCS_INTR_MASK, CCS_ENABLE_MIDI1 | CCS_ENABLE_MIDI2, card->iobase);
+                //dev->ioWrite16(CCS_INTR_STATUS, 0xFF, card->iobase); // clear all
+                card->SubType = DMX6FIRE_2496;
+                card->Specific.NumChannels = 6;
+                card->Specific.HasSPDIF = true;
+                IOLog("DMX6FIRE detected");
+                break;
+            }
+                
             case MAUDIO_DELTA_410_ID:
             {
                 card->SubType = DELTA_410;
@@ -1303,6 +1315,32 @@ int card_init(struct CardData *card)
         Init_akm4xxx(card, &card->codec[0]);
         
         CreateParmsForEWX2496(card);
+    }
+    else if(card->SubType == DMX6FIRE_2496)
+    {
+        card->akm_type = AKM4524;
+        
+        for (int i=0; i < 3; i++)
+        {
+            card->codec[i].caddr = 2;
+            card->codec[i].cif = 1;
+            card->codec[i].datamask = 0x10;
+            card->codec[i].clockmask = 0x20;
+            
+            card->codec[i].csmask = ICE1712_6FIRE_AK4524_CS_MASK; // 1st codec
+            card->codec[i].csaddr = 1 << i; //ICE1712_6FIRE_CS8427_ADDR*(i+1);
+            card->codec[i].csnone = 0;
+            card->codec[i].addflags = 8;
+            card->codec[i].totalmask = 0;
+            
+            card->codec[i].type = AKM4524;
+            card->codec[i].newflag = 1;
+            
+            Init_akm4xxx(card, &card->codec[i]);
+        }
+        
+        CreateParmsForDMX6Fire2496(card);
+        InitDigitalOut(card);
     }
     else if (card->SubType == DELTA_410)
     {
@@ -2035,6 +2073,259 @@ static void CreateParmsForEWX2496(struct CardData *card)
     p->Next = NULL;
 }
 
+static void CreateParmsForDMX6Fire2496(struct CardData *card)
+{
+    Parm* p = new Parm;
+    Parm *prev = NULL;
+    card->ParmList = p;
+    
+    
+    // left output
+    p->InitialValue = 0x7F;
+    p->MinValue = 14;
+    p->MaxValue = 0x7F;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 1; //kIOAudioControlChannelIDDefaultLeft;
+    p->Name = kIOAudioControlChannelNameLeft;
+    p->ControlID = 0;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x4;
+    p->reverse = false;
+    p->codec = 0;
+    
+    
+    // right output
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 0x7F;
+    p->MinValue = 14;
+    p->MaxValue = 0x7F;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 2; //kIOAudioControlChannelIDDefaultRight;
+    p->Name = kIOAudioControlChannelNameRight;
+    p->ControlID = 1;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x5;
+    p->reverse = false;
+    p->codec = 0;
+    p->Next = NULL;
+    
+    // third output
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 0x7E;
+    p->MinValue = 14;
+    p->MaxValue = 0x7E;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 3;//kIOAudioControlChannelIDDefaultLeftRear;
+    p->Name = "Output 3";
+    p->ControlID = 2;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x6;
+    p->reverse = false;
+    p->codec = 1;
+    
+    
+    // fourth output
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 0x7E;
+    p->MinValue = 14;
+    p->MaxValue = 0x7E;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 4; //kIOAudioControlChannelIDDefaultRightRear;
+    p->Name = "Output 4";
+    p->ControlID = 3;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x7;
+    p->reverse = false;
+    p->codec = 1;
+    
+    // fifth output
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 0x7E;
+    p->MinValue = 14;
+    p->MaxValue = 0x7E;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 5;//kIOAudioControlChannelIDDefaultLeftRear;
+    p->Name = "Output 5";
+    p->ControlID = 4;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x6;
+    p->reverse = false;
+    p->codec = 2;
+    
+    
+    // sixth output
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 0x7E;
+    p->MinValue = 14;
+    p->MaxValue = 0x7E;
+    p->MindB = (-49 << 16) + 32768;
+    p->MaxdB = 0;
+    p->ChannelID = 6; //kIOAudioControlChannelIDDefaultRightRear;
+    p->Name = "Output 6";
+    p->ControlID = 5;
+    p->Usage = kIOAudioControlUsageOutput;
+    p->reg = 0x7;
+    p->reverse = false;
+    p->codec = 2;
+    
+    // gains
+    // input 1
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 1;
+    p->Name = "Input 1";
+    p->ControlID = 8;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x4;
+    p->reverse = false;
+    p->codec = 0;
+    
+    
+    // input 2
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = kIOAudioControlChannelIDDefaultRight;
+    p->Name = "Input 2";
+    p->ControlID = 9;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x5;
+    p->reverse = false;
+    p->codec = 0;
+    
+    // input 3
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 3;
+    p->Name = "Input 3";
+    p->ControlID = 10;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x4;
+    p->reverse = false;
+    p->codec = 1;
+    
+    
+    // input 4
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 4;
+    p->Name = "Input 4";
+    p->ControlID = 11;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x5;
+    p->reverse = false;
+    p->codec = 1;
+    
+    // input 5
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 5;
+    p->Name = "Input 5";
+    p->ControlID = 12;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x4;
+    p->reverse = false;
+    p->codec = 2;
+    
+    
+    // input 6
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 6;
+    p->Name = "Input 6";
+    p->ControlID = 13;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x5;
+    p->reverse = false;
+    p->codec = 2;
+    
+    // input 7
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 7;
+    p->Name = "Input 7";
+    p->ControlID = 14;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x4;
+    p->reverse = false;
+    p->codec = 3;
+    
+    
+    // input 8
+    prev = p;
+    p = new Parm;
+    prev->Next = p;
+    p->InitialValue = 128;
+    p->MinValue = 128;
+    p->MaxValue = 164;
+    p->MindB = (0 << 16) + 32768;
+    p->MaxdB = (18 << 16) + 32768;
+    p->ChannelID = 8;
+    p->Name = "Input 8";
+    p->ControlID = 15;
+    p->Usage = kIOAudioControlUsageInput;
+    p->reg = 0x5;
+    p->reverse = false;
+    p->codec = 3;
+    p->Next = NULL;
+    
+}
 
 void CreateParmsForDelta410(struct CardData *card)
 {
